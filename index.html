@@ -16,7 +16,6 @@
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
 
-    <!-- Header -->
     <header class="p-6 border-b border-cyan-900 flex justify-between items-center">
         <h1 class="text-2xl font-bold orbitron nova-glow tracking-widest">NOVA v1.0</h1>
         <div class="flex items-center gap-2">
@@ -25,9 +24,7 @@
         </div>
     </header>
 
-    <!-- Chat Area -->
     <main id="chat-window" class="flex-1 overflow-y-auto p-6 space-y-6 chat-container">
-        <!-- Başlangıç Mesajı -->
         <div class="max-w-[80%] opacity-80">
             <p class="text-xs text-cyan-600 uppercase mb-1">// NOVA CORE</p>
             <p class="bg-cyan-950 p-4 rounded-tr-3xl rounded-bl-3xl border-l-2 border-cyan-400">
@@ -36,7 +33,6 @@
         </div>
     </main>
 
-    <!-- Input Area -->
     <footer class="p-6">
         <div class="relative max-w-4xl mx-auto">
             <input type="text" id="userInput" 
@@ -52,27 +48,23 @@
     </footer>
 
     <script>
-        // HAFIZA SİSTEMİ (LocalStorage)
         let memory = JSON.parse(localStorage.getItem('nova_memory')) || [];
 
         async function handleSend() {
             const input = document.getElementById('userInput');
-            const chatWindow = document.getElementById('chat-window');
             const message = input.value.trim();
             if (!message) return;
 
-            // Kullanıcı mesajını ekrana bas
             appendMessage('SEN', message, 'user');
             input.value = '';
 
-            // Hafızayı güncelle
             memory.push({ role: "user", content: message });
-            if (memory.length > 20) memory.shift(); // Sadece son 20 mesajı tut (Bütçe dostu hız)
+            if (memory.length > 20) memory.shift(); 
 
-            // NOVA'nın düşünme efekti
             const typingId = appendMessage('NOVA', 'Düşünüyor...', 'ai', true);
 
             try {
+                // Vercel'in kendi gizli API klasörüne istek atıyoruz
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -80,9 +72,13 @@
                 });
                 
                 const data = await response.json();
+                
+                if(data.error) {
+                    throw new Error(data.error.message);
+                }
+
                 const aiReply = data.choices[0].message.content;
 
-                // NOVA'nın cevabını ekrana bas ve hafızaya al
                 removeTyping(typingId);
                 appendMessage('NOVA', aiReply, 'ai');
                 memory.push({ role: "assistant", content: aiReply });
@@ -90,7 +86,7 @@
 
             } catch (error) {
                 removeTyping(typingId);
-                appendMessage('SİSTEM HATA', 'Bağlantı koptu şef, API anahtarını kontrol et!', 'ai');
+                appendMessage('SİSTEM HATA', 'Bağlantı kurulamadı şef. Vercel Ayarlarını ve API anahtarını kontrol et!', 'ai');
             }
         }
 
@@ -102,7 +98,7 @@
             const shape = type === 'user' ? 'rounded-tl-3xl rounded-br-3xl' : 'rounded-tr-3xl rounded-bl-3xl';
 
             const html = `
-                <div id="${id}" class="max-w-[85%] ${align} animate-fade-in">
+                <div id="${id}" class="max-w-[85%] ${align}">
                     <p class="text-[10px] text-cyan-600 uppercase mb-1 tracking-widest">// ${sender}</p>
                     <p class="${color} ${shape} p-4 text-sm leading-relaxed">${text}</p>
                 </div>
